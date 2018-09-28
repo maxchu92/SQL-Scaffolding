@@ -14,6 +14,10 @@ Changes:
 - Added Folder Path
 - Added Data annotation for each property
 - Each table will now be generated into specific CS file.
+- Added Key/Required/Identity/Computed data annotation
+- Added Dapper namespace references and Dapper Data annotation.
+- Each table will now be generated into specific CS file.
+- Added Context Scaffolding to generate context CS file.
 
 See https://stackoverflow.com/a/5873231/107625 for the original idea.
 
