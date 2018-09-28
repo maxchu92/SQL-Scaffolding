@@ -5,7 +5,6 @@ DECLARE @ContextName varchar(MAX) = 'DefaultContext'
 DECLARE @FolderPath varchar(MAX) = 'D:\Websites\Contexts\' -- Files will be saved in the server. Please create the folder first.
 DECLARE @UseNamespaces VARCHAR(MAX) = 'using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using MyNamespace.Models;'
 
 DECLARE @namespace VARCHAR(MAX) = 'MyNamespace.Contexts'
@@ -20,9 +19,6 @@ DECLARE @Result AS VARCHAR(MAX) = @UseNamespaces + CHAR(13) + CHAR(13) + CASE @n
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + 'if (!optionsBuilder.IsConfigured) {' + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + CHAR(9) + 'optionsBuilder.UseSqlServer(Startup.Configuration.GetConnectionString("DefaultConnection"));' + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + '}' + CHAR(13)
-+ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + '}' + CHAR(13) + CHAR(13)
-+ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + 'public void ConfigureServices(IServiceCollection services) {' + CHAR(13)
-+ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + 'services.AddDbContext<' + @ContextName + '>(options => options.UseSqlServer(Startup.Configuration.GetConnectionString("DefaultConnection")));' + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) + CHAR(9) + '}' + CHAR(13) END
 + CHAR(9) + '}' + CHAR(13)
 +'}'
