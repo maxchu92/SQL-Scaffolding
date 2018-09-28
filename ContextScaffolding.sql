@@ -9,9 +9,9 @@ using MyNamespace.Models;'
 
 DECLARE @namespace VARCHAR(MAX) = 'MyNamespace.Contexts'
 DECLARE @varTables AS VARCHAR(MAX) = ''
-SELECT  @varTables =  COALESCE(@varTables + CHAR(13) + CHAR(9) + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + 'public DbSet<' + name + '> ' + name + ' { get; set; }', 'public DbSet<' + name + '> ' + name + ' { get; set; }')
-FROM Sys.tables
-ORDER BY name
+SELECT  @varTables =  COALESCE(@varTables + CHAR(13) + CHAR(9) + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + 'public DbSet<' + TABLE_NAME + '> ' + TABLE_NAME + ' { get; set; }', 'public DbSet<' + TABLE_NAME + '> ' + TABLE_NAME + ' { get; set; }')
+FROM [INFORMATION_SCHEMA].[TABLES]
+ORDER BY TABLE_NAME 
 
 DECLARE @Result AS VARCHAR(MAX) = @UseNamespaces + CHAR(13) + CHAR(13) + CASE @namespace WHEN '' THEN '' ELSE 'namespace ' + @namespace + ' {'  + CHAR(13) + CHAR(9) END
 + 'public class ' + @ContextName + ' : DbContext {' + @varTables + CHAR(13) + CHAR(13)
