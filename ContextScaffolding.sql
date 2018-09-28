@@ -14,7 +14,7 @@ FROM [INFORMATION_SCHEMA].[TABLES]
 ORDER BY TABLE_NAME 
 
 DECLARE @Result AS VARCHAR(MAX) = @UseNamespaces + CHAR(13) + CHAR(13) + CASE @namespace WHEN '' THEN '' ELSE 'namespace ' + @namespace + ' {'  + CHAR(13) + CHAR(9) END
-+ 'public class ' + @ContextName + ' : DbContext {' + @varTables + CHAR(13) + CHAR(13)
++ 'public partial class ' + @ContextName + ' : DbContext {' + @varTables + CHAR(13) + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + 'protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {' + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + 'if (!optionsBuilder.IsConfigured) {' + CHAR(13)
 + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CHAR(9) + CHAR(9) + 'optionsBuilder.UseSqlServer(Startup.Configuration.GetConnectionString("DefaultConnection"));' + CHAR(13)
