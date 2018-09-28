@@ -4,13 +4,14 @@
 -- Then derived by UWEKEIM in https://pastebin.com/NUQVLmCs
 -- This is the version i had derived.
 -- Changes:
------- Added Using reference
------- Added Current Namespace
------- Added Partial class attribute
------- Added Folder Path
------- Added Data annotation for each property
------- Added Key/Required/Identity/Computed data annotation
+------ Added Using reference.
+------ Added Current Namespace.
+------ Added Partial class attribute.
+------ Added Folder Path.
+------ Added Data annotation for each property.
+------ Added Key/Required/Identity/Computed/Timestamp data annotation.
 ------ Added Dapper namespace references and Dapper Data annotation.
+------ Changed timestamp type to byte[].
 ------ Each table will now be generated into specific CS file.
 
 -- See https://stackoverflow.com/a/5873231/107625 for the original idea
@@ -20,8 +21,7 @@
  
 DECLARE @TableName sysname
 DECLARE @Result VARCHAR(MAX) = ''
------ Files will be saved into the folder stored in the SQL Server host.
-DECLARE @FolderPath varchar(MAX) = 'D:\Websites\Models\' 
+DECLARE @FolderPath varchar(MAX) = 'D:\Websites\Models\' -- Please create the folder before save. Files will be saved into the Database host.
 DECLARE @UseNamespaces VARCHAR(MAX) = 'using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -41,96 +41,86 @@ INTO @tableName
 WHILE @@FETCH_STATUS = 0
 BEGIN
  
+SELECT @Result = @Result + @UseNamespaces + CHAR(13)
++ CASE @namespace WHEN '' THEN '' ELSE CHAR(13) + 'namespace ' + @namespace + ' {' + CHAR(13) END + CHAR(13)
++ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + '[Table(@"' + @TableName + '"), DapEx.Table(@"' + @TableName + '")]' + CHAR(13)
++ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + 'public partial class ' + @TableName + ' {' + CHAR(13) + CHAR(13)
  
--- https://stackoverflow.com/a/5873231/107625
- 
-select @Result = @Result + @UseNamespaces + '
-' + CASE WHEN @namespace <> '' THEN '
-namespace ' + @namespace + ' {' ELSE '' END + '
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '[Table(@"' + @TableName + '"), DapEx.Table(@"' + @TableName + '")]
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + 'public partial class ' + @TableName + ' {'
- 
-    select @Result = @Result + '
-
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '	' + CASE WHEN t.DataAnno LIKE '' THEN '' ELSE '[' + DataAnno + ']' END + '
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '	public ' + ColumnType + NullableSign + ' ' + ColumnName + ' { get; set; }'
-            from
-            (
-				SELECT
-					ISNULL(STUFF(
-						CASE WHEN ISNULL(i.is_primary_key, 0) = 1
-							THEN ', Key, DapEx.Key'
-							ELSE 
-								CASE typ.name WHEN 'timestamp'
-									THEN ', Timestamp'
-									ELSE
-										CONCAT(
-											CASE WHEN col.is_identity = 1
-												THEN ', DatabaseGenerated(DatabaseGeneratedOption.Identity)'
-												ELSE ''
-											END,
-											CASE WHEN col.is_computed = 1
-												THEN ', DatabaseGenerated(DatabaseGeneratedOption.Computed), DapEx.Computed'
-												ELSE ''
-											END,
-											CASE WHEN col.is_nullable = 1
-												THEN ''
-												ELSE ', Required'
-											END
-										)
-								END
-						END
-					, 1, 2, ''), '')
-					DataAnno,
-                    replace(col.name, ' ', '_') ColumnName,
-                    col.column_id ColumnId,
-                    case typ.name
-                        when 'bigint' then 'long'
-                        when 'binary' then 'byte[]'
-                        when 'bit' then 'bool'
-                        when 'char' then 'string'
-                        when 'date' then 'DateTime'
-                        when 'datetime' then 'DateTime'
-                        when 'datetime2' then 'DateTime'
-                        when 'datetimeoffset' then 'DateTimeOffset'
-                        when 'decimal' then 'decimal'
-                        when 'float' then 'float'
-                        when 'image' then 'byte[]'
-                        when 'int' then 'int'
-                        when 'money' then 'decimal'
-                        when 'nchar' then 'string'
-                        when 'ntext' then 'string'
-                        when 'numeric' then 'decimal'
-                        when 'nvarchar' then 'string'
-                        when 'real' then 'double'
-                        when 'smalldatetime' then 'DateTime'
-                        when 'smallint' then 'short'
-                        when 'smallmoney' then 'decimal'
-                        when 'text' then 'string'
-                        when 'time' then 'TimeSpan'
-                        when 'timestamp' then 'byte[]'
-                        when 'tinyint' then 'byte'
-                        when 'uniqueidentifier' then 'Guid'
-                        when 'varbinary' then 'byte[]'
-                        when 'varchar' then 'string'
-                        else 'UNKNOWN_' + typ.name
-                    end ColumnType,
-                    case
-                        when col.is_nullable = 1 and typ.name in ('bigint', 'bit', 'date', 'datetime', 'datetime2', 'datetimeoffset', 'decimal', 'float', 'int', 'money', 'numeric', 'real', 'smalldatetime', 'smallint', 'smallmoney', 'time', 'tinyint', 'uniqueidentifier')
-                        then '?'
-                        else ''
-                    end NullableSign
-                from sys.columns col
-                join sys.types typ ON col.system_type_id = typ.system_type_id AND col.user_type_id = typ.user_type_id
-				LEFT OUTER JOIN sys.index_columns ic ON ic.object_id = col.object_id AND ic.column_id = col.column_id
-				LEFT OUTER JOIN sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id
-                where col.object_id = object_id(@TableName)
-            ) t
-            order by ColumnId
- 
-            set @Result = @Result  + '
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '}' + CASE WHEN @namespace <> '' THEN '
-}' ELSE '' END
+SELECT @Result = @Result
++ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + CASE WHEN t.DataAnno LIKE '' THEN '' ELSE '[' + DataAnno + ']' END + CHAR(13)
++ CASE @namespace WHEN '' THEN '' ELSE CHAR(9) END + CHAR(9) + 'public ' + ColumnType + NullableSign + ' ' + ColumnName + ' { get; set; }' + CHAR(13) + CHAR(13)
+    FROM
+    (
+		SELECT
+			ISNULL(STUFF(
+				CASE
+					WHEN ISNULL(i.is_primary_key, 0) = 1 THEN ', Key, DapEx.Key'
+					WHEN typ.name LIKE 'timestamp'
+						THEN ', Timestamp'
+					ELSE
+						CONCAT(
+							CASE col.is_identity WHEN 1
+								THEN ', DatabaseGenerated(DatabaseGeneratedOption.Identity)'
+								ELSE ''
+							END,
+							CASE col.is_computed WHEN 1
+								THEN ', DatabaseGenerated(DatabaseGeneratedOption.Computed), DapEx.Computed'
+								ELSE ''
+							END,
+							CASE col.is_nullable WHEN 1
+								THEN ''
+								ELSE ', Required'
+							END
+						)
+				END
+			, 1, 2, ''), '') DataAnno,
+            replace(col.name, ' ', '_') ColumnName,
+            col.column_id ColumnId,
+            case typ.name
+                WHEN 'bigint' THEN 'long'
+                WHEN 'binary' THEN 'byte[]'
+                WHEN 'bit' THEN 'bool'
+                WHEN 'char' THEN 'string'
+                WHEN 'date' THEN 'DateTime'
+                WHEN 'datetime' THEN 'DateTime'
+                WHEN 'datetime2' THEN 'DateTime'
+                WHEN 'datetimeoffset' THEN 'DateTimeOffset'
+                WHEN 'decimal' THEN 'decimal'
+                WHEN 'float' THEN 'float'
+                WHEN 'image' THEN 'byte[]'
+                WHEN 'int' THEN 'int'
+                WHEN 'money' THEN 'decimal'
+                WHEN 'nchar' THEN 'string'
+                WHEN 'ntext' THEN 'string'
+                WHEN 'numeric' THEN 'decimal'
+                WHEN 'nvarchar' THEN 'string'
+                WHEN 'real' THEN 'double'
+                WHEN 'smalldatetime' THEN 'DateTime'
+                WHEN 'smallint' THEN 'short'
+                WHEN 'smallmoney' THEN 'decimal'
+                WHEN 'text' THEN 'string'
+                WHEN 'time' THEN 'TimeSpan'
+                WHEN 'timestamp' THEN 'byte[]'
+                WHEN 'tinyint' THEN 'byte'
+                WHEN 'uniqueidentifier' THEN 'Guid'
+                WHEN 'varbinary' THEN 'byte[]'
+                WHEN 'varchar' THEN 'string'
+                ELSE 'UNKNOWN_' + typ.name
+            END ColumnType,
+            case
+                WHEN col.is_nullable = 1 and typ.name in ('bigint', 'bit', 'date', 'datetime', 'datetime2', 'datetimeoffset', 'decimal', 'float', 'int', 'money', 'numeric', 'real', 'smalldatetime', 'smallint', 'smallmoney', 'time', 'tinyint', 'uniqueidentifier')
+                THEN '?'
+                ELSE ''
+            END NullableSign
+        FROM sys.columns col
+        JOIN sys.types typ ON col.system_type_id = typ.system_type_id AND col.user_type_id = typ.user_type_id
+		LEFT OUTER JOIN sys.index_columns ic ON ic.object_id = col.object_id AND ic.column_id = col.column_id
+		LEFT OUTER JOIN sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+        WHERE col.object_id = object_id(@TableName)
+    ) t
+    ORDER BY ColumnId
+SET @Result = @Result + CASE @namespace WHEN '' THEN '' ELSE CHAR(9) + '}' + CHAR(13) END
++ '}'
 
 DECLARE @filename AS VARCHAR(100) = @FolderPath + @TableName + '.cs'
 
@@ -141,4 +131,3 @@ SELECT @Result = ''
 END
 CLOSE table_cursor
 DEALLOCATE table_cursor
- 
