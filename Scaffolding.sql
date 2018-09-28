@@ -9,6 +9,8 @@
 ------ Added Partial class attribute
 ------ Added Folder Path
 ------ Added Data annotation for each property
+------ Added Key/Required/Identity/Computed data annotation
+------ Added Dapper namespace references and Dapper Data annotation.
 ------ Each table will now be generated into specific CS file.
 
 -- See https://stackoverflow.com/a/5873231/107625 for the original idea
@@ -18,10 +20,12 @@
  
 DECLARE @TableName sysname
 DECLARE @Result VARCHAR(MAX) = ''
-DECLARE @FolderPath varchar(MAX) = 'D:\Websites\Models\'
+----- Files will be saved into the folder stored in the SQL Server host.
+DECLARE @FolderPath varchar(MAX) = 'D:\Websites\Models\' 
 DECLARE @UseNamespaces VARCHAR(MAX) = 'using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;'
+using System.ComponentModel.DataAnnotations.Schema;
+using DapEx = Dapper.Contrib.Extensions;'
 
 DECLARE @namespace VARCHAR(MAX) = 'YourNamespace.Models'
 
@@ -43,28 +47,43 @@ BEGIN
 select @Result = @Result + @UseNamespaces + '
 ' + CASE WHEN @namespace <> '' THEN '
 namespace ' + @namespace + ' {' ELSE '' END + '
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '[Table(@"' + @TableName + '")]
+' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '[Table(@"' + @TableName + '"), DapEx.Table(@"' + @TableName + '")]
 ' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + 'public partial class ' + @TableName + ' {'
  
     select @Result = @Result + '
 
-' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '	' + DataAnno + '
+' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '	' + CASE WHEN t.DataAnno LIKE '' THEN '' ELSE '[' + DataAnno + ']' END + '
 ' + CASE WHEN @namespace <> '' THEN '	' ELSE '' END + '	public ' + ColumnType + NullableSign + ' ' + ColumnName + ' { get; set; }'
             from
             (
-                SELECT
-					'[' + 
-					CASE WHEN col.is_identity = 1
-						THEN 'Key, Display(Name="ID") '
-						ELSE 'Display(Name="' + REPLACE(dbo.Split_On_Upper_Case(col.name), LEFT(dbo.Split_On_Upper_Case(col.name), CHARINDEX(' ', dbo.Split_On_Upper_Case(col.name))), '') +'")'
-					END				
-					+ CASE WHEN col.is_nullable = 1
-						THEN ''
-						ELSE ', Required'
-					END + ']'
+				SELECT
+					ISNULL(STUFF(
+						CASE WHEN ISNULL(i.is_primary_key, 0) = 1
+							THEN ', Key, DapEx.Key'
+							ELSE 
+								CASE typ.name WHEN 'timestamp'
+									THEN ', Timestamp'
+									ELSE
+										CONCAT(
+											CASE WHEN col.is_identity = 1
+												THEN ', DatabaseGenerated(DatabaseGeneratedOption.Identity)'
+												ELSE ''
+											END,
+											CASE WHEN col.is_computed = 1
+												THEN ', DatabaseGenerated(DatabaseGeneratedOption.Computed), DapEx.Computed'
+												ELSE ''
+											END,
+											CASE WHEN col.is_nullable = 1
+												THEN ''
+												ELSE ', Required'
+											END
+										)
+								END
+						END
+					, 1, 2, ''), '')
 					DataAnno,
                     replace(col.name, ' ', '_') ColumnName,
-                    column_id ColumnId,
+                    col.column_id ColumnId,
                     case typ.name
                         when 'bigint' then 'long'
                         when 'binary' then 'byte[]'
@@ -89,7 +108,7 @@ namespace ' + @namespace + ' {' ELSE '' END + '
                         when 'smallmoney' then 'decimal'
                         when 'text' then 'string'
                         when 'time' then 'TimeSpan'
-                        when 'timestamp' then 'DateTime'
+                        when 'timestamp' then 'byte[]'
                         when 'tinyint' then 'byte'
                         when 'uniqueidentifier' then 'Guid'
                         when 'varbinary' then 'byte[]'
@@ -102,9 +121,10 @@ namespace ' + @namespace + ' {' ELSE '' END + '
                         else ''
                     end NullableSign
                 from sys.columns col
-                    join sys.types typ on
-                        col.system_type_id = typ.system_type_id AND col.user_type_id = typ.user_type_id
-                where object_id = object_id(@TableName)
+                join sys.types typ ON col.system_type_id = typ.system_type_id AND col.user_type_id = typ.user_type_id
+				LEFT OUTER JOIN sys.index_columns ic ON ic.object_id = col.object_id AND ic.column_id = col.column_id
+				LEFT OUTER JOIN sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+                where col.object_id = object_id(@TableName)
             ) t
             order by ColumnId
  
@@ -113,7 +133,7 @@ namespace ' + @namespace + ' {' ELSE '' END + '
 }' ELSE '' END
 
 DECLARE @filename AS VARCHAR(100) = @FolderPath + @TableName + '.cs'
-	
+
 EXEC USP_SaveFile @Result, @filename
 SELECT @Result = ''
     FETCH NEXT FROM table_cursor
@@ -121,3 +141,4 @@ SELECT @Result = ''
 END
 CLOSE table_cursor
 DEALLOCATE table_cursor
+ 
