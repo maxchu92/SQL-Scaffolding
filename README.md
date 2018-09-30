@@ -14,15 +14,15 @@ Changes:
 - Added Folder Path
 - Added Data annotation for each property
 - Each table will now be generated into specific CS file.
-- Added Key/Required/Identity/Computed data annotation
+- Added Key/Required/Identity/Computed/Timestamp data annotation
 - Added Dapper namespace references and Dapper Data annotation.
 - Each table will now be generated into specific CS file.
 - Added Context Scaffolding to generate context CS file.
+- Changed timestamp type to byte[].
+- Added Context Scaffolding.
 
 See https://stackoverflow.com/a/5873231/107625 for the original idea.
 
 See http://midnightprogrammer.net/post/use-sql-query-to-writecreate-a-file for the SP to write to file.
-
-See https://stackoverflow.com/a/23480936/4493976 for Split_On_Upper_Case function.
 
 See https://pastebin.com/NUQVLmCs derived by UWEKEIM.
