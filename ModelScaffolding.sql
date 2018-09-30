@@ -1,8 +1,22 @@
--- Generates POCOs/models for all tables in the current database.
--- Useful for later processing e. g. with Dapper.
---
--- See https://stackoverflow.com/a/5873231/107625 for the original idea
--- See http://midnightprogrammer.net/post/use-sql-query-to-writecreate-a-file for the SP to write to file.
+-- Generates POCOs/models for all tables in the current database.	-- Generates POCOs/models for all tables in the current database.
+-- Useful for later processing e. g. with Dapper.	-- Useful for later processing e. g. with Dapper.
+-- Originally done by Alex Aza in https://stackoverflow.com/questions/5873170/generate-class-from-database-table/5873231#5873231	--
+-- Then derived by UWEKEIM in https://pastebin.com/NUQVLmCs	
+-- This is the version i had derived.	
+-- Changes:	
+------ Added Using reference.	
+------ Added Current Namespace.	
+------ Added Partial class attribute.	
+------ Added Folder Path.	
+------ Added Data annotation for each property.	
+------ Added Key/Required/Identity/Computed/Timestamp data annotation.	
+------ Added Dapper namespace references and Dapper Data annotation.	
+------ Changed timestamp type to byte[].	
+------ Each table will now be generated into specific CS file.	
+ -- See https://stackoverflow.com/a/5873231/107625 for the original idea	-- See https://stackoverflow.com/a/5873231/107625 for the original idea
+-- See http://midnightprogrammer.net/post/use-sql-query-to-writecreate-a-file for the SP to write to file.	-- See http://midnightprogrammer.net/post/use-sql-query-to-writecreate-a-file for the SP to write to file.
+-- See https://stackoverflow.com/a/23480936/4493976 for Split_On_Upper_Case function.	
+-- See https://pastebin.com/NUQVLmCs
  
 DECLARE @TableName sysname
 DECLARE @Result VARCHAR(MAX) = ''
