@@ -1,1 +1,1 @@
-SELECT NOW();
+SELECT 123;
